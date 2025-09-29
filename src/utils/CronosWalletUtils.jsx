@@ -274,8 +274,6 @@ export const CronosWalletProvider = ({ children }) => {
 };
 
 // Hook for using Cronos wallet utilities
-import { useMemo } from 'react';
-
 export const useCronosWallet = () => {
   return useMemo(() => new CronosWalletUtils(), []);
 };

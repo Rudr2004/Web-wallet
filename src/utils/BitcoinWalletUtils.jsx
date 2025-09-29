@@ -168,8 +168,6 @@ export const BitcoinWalletProvider = ({ children }) => {
 };
 
 // Hook for using Bitcoin wallet utilities
-import { useMemo } from 'react';
-
 export const useBitcoinWallet = () => {
   return useMemo(() => new BitcoinWalletUtils(), []);
 };
