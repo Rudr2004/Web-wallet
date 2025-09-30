@@ -13,6 +13,7 @@
     "@bitcoinerlab/secp256k1": "^1.2.0",
     "@scure/bip32": "^2.0.0",
     "@scure/bip39": "^2.0.0",
+    "@types/qrcode": "^1.5.5",
     "bip39": "^3.1.0",
     "bitcoinjs-lib": "^6.1.7",
     "buffer": "^6.0.3",
