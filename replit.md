@@ -15,7 +15,8 @@ This is a React + TypeScript + Vite frontend-only application for cryptocurrency
 - ✅ Configured vite-plugin-node-polyfills for Buffer/crypto/stream browser support
 - ✅ Bitcoin wallet now supports: generate, import (mnemonic/WIF), balance, send, transaction status
 - ✅ All operations working error-free in frontend-only setup
-- ✅ Cronos wallet fully functional with ethers.js (unchanged)
+- ✅ Cronos wallet fully functional with ethers.js
+- ✅ Added QR code generation to Receive tabs for both Bitcoin and Cronos wallets
 
 ## Architecture
 - **Frontend Framework**: React 19.1.1 with TypeScript
@@ -29,6 +30,7 @@ This is a React + TypeScript + Vite frontend-only application for cryptocurrency
   - ecpair for key pair management
 - **Cronos Libraries**: ethers.js v6 for Ethereum-compatible operations
 - **Polyfills**: vite-plugin-node-polyfills for Node.js core modules
+- **QR Code**: qrcode library for address QR code generation
 
 ## Bitcoin Wallet Features
 - **Generate Wallet**: BIP39 mnemonic + BIP84 HD derivation (m/84'/1'/0'/0/0)
@@ -37,6 +39,7 @@ This is a React + TypeScript + Vite frontend-only application for cryptocurrency
 - **Send**: PSBT-based transactions with UTXO management and fee estimation
 - **Transaction Status**: Confirmation tracking via Blockstream API
 - **Address Type**: P2WPKH (SegWit bech32) on Bitcoin testnet
+- **QR Code**: Automatic QR code generation for receiving addresses
 
 ## Cronos Wallet Features
 - **Generate Wallet**: Random wallet generation with ethers.js
@@ -44,6 +47,7 @@ This is a React + TypeScript + Vite frontend-only application for cryptocurrency
 - **Balance**: CRO balance checking via Cronos testnet RPC
 - **Send**: CRO token transfers with gas estimation
 - **ERC20 Support**: Token balance, info, and transfer capabilities
+- **QR Code**: Automatic QR code generation for receiving addresses
 
 ## Configuration
 - **Development**: `npm run dev` serves on port 5000
