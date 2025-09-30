@@ -1,7 +1,8 @@
 // CronosWallet.tsx - Cronos wallet component
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WalletCard from './WalletCard';
 import { useCronosWallet } from '../utils/CronosWalletUtils';
+import QRCode from 'qrcode';
 
 const CronosWallet = () => {
   const cronosWallet = useCronosWallet();
@@ -10,6 +11,7 @@ const CronosWallet = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   
   // Form states
   const [seedInput, setSeedInput] = useState('');
@@ -24,6 +26,24 @@ const CronosWallet = () => {
   const [tokenToAddress, setTokenToAddress] = useState('');
   const [tokenInfo, setTokenInfo] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
+
+  // Generate QR code when address changes
+  useEffect(() => {
+    if (walletInfo.address) {
+      QRCode.toDataURL(walletInfo.address, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      })
+        .then(url => setQrCodeUrl(url))
+        .catch(err => console.error('QR code generation error:', err));
+    } else {
+      setQrCodeUrl('');
+    }
+  }, [walletInfo.address]);
 
   const showResult = (data, isError = false) => {
     if (isError) {
@@ -283,12 +303,17 @@ const CronosWallet = () => {
             <h3>Receive CRO</h3>
             {walletInfo.address ? (
               <div>
+                {qrCodeUrl && (
+                  <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                    <img src={qrCodeUrl} alt="QR Code" style={{ maxWidth: '200px', border: '2px solid #ddd', borderRadius: '8px' }} />
+                  </div>
+                )}
                 <div className="address-display">
                   {walletInfo.address}
                 </div>
                 <div className="receive-instructions">
                   <p><strong>Instructions:</strong></p>
-                  <p>1. Copy the address above</p>
+                  <p>1. Scan the QR code or copy the address above</p>
                   <p>2. Use the Cronos testnet faucet to get test tokens</p>
                   <p>3. Send CRO to this address</p>
                   <p><strong>Faucet:</strong></p>
