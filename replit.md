@@ -1,26 +1,49 @@
 # Wallet Integration Project
 
 ## Overview
-This is a React + TypeScript + Vite frontend application designed for cryptocurrency wallet integration, specifically supporting Bitcoin and Cronos wallets. The project was imported from GitHub and successfully configured for the Replit environment.
+This is a React + TypeScript + Vite frontend-only application for cryptocurrency wallet integration, supporting both Bitcoin and Cronos testnets. The project uses browser-compatible libraries to provide full wallet functionality without requiring a backend server.
 
 ## Project Structure
 - **Frontend**: React 19 with TypeScript and Vite
-- **Wallet Support**: Bitcoin and Cronos blockchain integration
+- **Wallet Support**: Bitcoin testnet and Cronos testnet integration
 - **Build System**: Vite for development and production builds
 - **Port**: 5000 (configured for Replit environment)
 
-## Recent Changes (September 29, 2025)
-- ✅ Installed all Node.js dependencies
-- ✅ Configured Vite to work in Replit environment with host binding to 0.0.0.0:5000
-- ✅ Set up React Dev Server workflow 
-- ✅ Configured deployment settings for autoscale production deployment
-- ✅ Application tested and running successfully
+## Recent Changes (September 30, 2025)
+- ✅ Implemented complete Bitcoin wallet functionality with browser-compatible libraries
+- ✅ Installed @scure/bip39, @scure/bip32, @bitcoinerlab/secp256k1, bitcoinjs-lib, ecpair
+- ✅ Configured vite-plugin-node-polyfills for Buffer/crypto/stream browser support
+- ✅ Bitcoin wallet now supports: generate, import (mnemonic/WIF), balance, send, transaction status
+- ✅ All operations working error-free in frontend-only setup
+- ✅ Cronos wallet fully functional with ethers.js (unchanged)
 
 ## Architecture
 - **Frontend Framework**: React 19.1.1 with TypeScript
 - **Build Tool**: Vite 7.1.7 with React plugin
 - **Development Server**: Configured for Replit with allowedHosts: true
-- **Wallet Integration**: Bitcoin and Cronos wallet functionality (see attached_assets/ folder)
+- **Bitcoin Libraries**: 
+  - @scure/bip39 for mnemonic generation
+  - @scure/bip32 for HD key derivation
+  - @bitcoinerlab/secp256k1 for ECC operations
+  - bitcoinjs-lib v6 for Bitcoin protocol
+  - ecpair for key pair management
+- **Cronos Libraries**: ethers.js v6 for Ethereum-compatible operations
+- **Polyfills**: vite-plugin-node-polyfills for Node.js core modules
+
+## Bitcoin Wallet Features
+- **Generate Wallet**: BIP39 mnemonic + BIP84 HD derivation (m/84'/1'/0'/0/0)
+- **Import**: Support for mnemonic phrases and WIF private keys
+- **Balance**: Real-time balance checking via Blockstream API
+- **Send**: PSBT-based transactions with UTXO management and fee estimation
+- **Transaction Status**: Confirmation tracking via Blockstream API
+- **Address Type**: P2WPKH (SegWit bech32) on Bitcoin testnet
+
+## Cronos Wallet Features
+- **Generate Wallet**: Random wallet generation with ethers.js
+- **Import**: Support for private keys
+- **Balance**: CRO balance checking via Cronos testnet RPC
+- **Send**: CRO token transfers with gas estimation
+- **ERC20 Support**: Token balance, info, and transfer capabilities
 
 ## Configuration
 - **Development**: `npm run dev` serves on port 5000
@@ -34,7 +57,12 @@ This is a React + TypeScript + Vite frontend application designed for cryptocurr
 3. Hot reloading is enabled for rapid development
 4. TypeScript compilation and ESLint checking are integrated
 
+## API Endpoints
+- **Bitcoin Testnet**: https://blockstream.info/testnet/api (Blockstream Esplora)
+- **Cronos Testnet**: https://evm-t3.cronos.org (RPC endpoint)
+
 ## User Preferences
-- Maintain React/TypeScript/Vite stack
-- Use existing wallet integration libraries in attached_assets/
+- Frontend-only architecture (no backend required)
+- React/TypeScript/Vite stack
+- Browser-compatible Bitcoin libraries
 - Keep development server on port 5000 for Replit compatibility
