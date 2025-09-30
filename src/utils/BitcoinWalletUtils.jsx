@@ -1,27 +1,51 @@
-// BitcoinWalletUtils.jsx - Frontend Bitcoin wallet utilities
-// Note: Full Bitcoin functionality requires Node.js environment
-// This simplified version focuses on basic operations that work in browsers
-
 import { useMemo } from 'react';
+import * as bitcoin from 'bitcoinjs-lib';
+import ecc from '@bitcoinerlab/secp256k1';
+import { HDKey } from '@scure/bip32';
+import * as bip39 from '@scure/bip39';
+import { wordlist } from '@scure/bip39/wordlists/english';
+import { ECPairFactory } from 'ecpair';
 
-// Simplified Bitcoin wallet utility class for frontend operations
+bitcoin.initEccLib(ecc);
+const ECPair = ECPairFactory(ecc);
+
+const TESTNET = bitcoin.networks.testnet;
+const API_URL = 'https://blockstream.info/testnet/api';
+
 export class BitcoinWalletUtils {
   constructor() {
-    this.network = 'testnet';
-    this.apiUrl = 'https://blockstream.info/testnet/api';
+    this.network = TESTNET;
+    this.apiUrl = API_URL;
+    console.log('Bitcoin wallet utilities initialized for testnet');
   }
 
-  // Generate a new Bitcoin wallet (simplified version)
   generateWallet() {
     try {
-      // Note: This is a simplified implementation
-      // For production, use a proper Bitcoin library or backend service
-      const message = "Bitcoin wallet generation requires specialized libraries. Please use a backend service or dedicated Bitcoin libraries.";
+      const mnemonic = bip39.generateMnemonic(wordlist, 128);
+      const seed = bip39.mnemonicToSeedSync(mnemonic);
       
+      const root = HDKey.fromMasterSeed(seed);
+      const path = "m/84'/1'/0'/0/0";
+      const child = root.derive(path);
+      
+      if (!child.privateKey) {
+        throw new Error('Failed to derive private key');
+      }
+
+      const keyPair = ECPair.fromPrivateKey(Buffer.from(child.privateKey));
+      
+      const { address } = bitcoin.payments.p2wpkh({
+        pubkey: Buffer.from(keyPair.publicKey),
+        network: this.network
+      });
+
       return {
-        success: false,
-        error: message,
-        note: "Consider using a backend API or specialized Bitcoin wallet libraries for browser compatibility"
+        success: true,
+        mnemonic,
+        address,
+        privateKey: keyPair.toWIF(),
+        path,
+        publicKey: Buffer.from(keyPair.publicKey).toString('hex')
       };
     } catch (error) {
       console.error('Error generating Bitcoin wallet:', error);
@@ -29,15 +53,40 @@ export class BitcoinWalletUtils {
     }
   }
 
-  // Generate wallet from seed phrase (simplified version)
-  generateFromSeed(mnemonic = null) {
+  generateFromSeed(mnemonic) {
     try {
-      const message = "Bitcoin wallet generation from seed requires specialized libraries. Please use a backend service.";
+      if (!mnemonic) {
+        const newMnemonic = bip39.generateMnemonic(wordlist, 128);
+        return this.generateFromSeed(newMnemonic);
+      }
+
+      if (!bip39.validateMnemonic(mnemonic, wordlist)) {
+        throw new Error('Invalid mnemonic phrase');
+      }
+
+      const seed = bip39.mnemonicToSeedSync(mnemonic);
+      const root = HDKey.fromMasterSeed(seed);
+      const path = "m/84'/1'/0'/0/0";
+      const child = root.derive(path);
       
+      if (!child.privateKey) {
+        throw new Error('Failed to derive private key');
+      }
+
+      const keyPair = ECPair.fromPrivateKey(Buffer.from(child.privateKey));
+      
+      const { address } = bitcoin.payments.p2wpkh({
+        pubkey: Buffer.from(keyPair.publicKey),
+        network: this.network
+      });
+
       return {
-        success: false,
-        error: message,
-        note: "Consider using a backend API or specialized Bitcoin wallet libraries for browser compatibility"
+        success: true,
+        mnemonic,
+        address,
+        privateKey: keyPair.toWIF(),
+        path,
+        publicKey: Buffer.from(keyPair.publicKey).toString('hex')
       };
     } catch (error) {
       console.error('Error generating Bitcoin wallet from seed:', error);
@@ -45,15 +94,24 @@ export class BitcoinWalletUtils {
     }
   }
 
-  // Import wallet from private key (simplified version)
   importFromPrivateKey(privateKeyWIF) {
     try {
-      const message = "Bitcoin wallet import requires specialized libraries. Please use a backend service.";
+      if (!privateKeyWIF) {
+        throw new Error('Private key is required');
+      }
+
+      const keyPair = ECPair.fromWIF(privateKeyWIF, this.network);
       
+      const { address } = bitcoin.payments.p2wpkh({
+        pubkey: Buffer.from(keyPair.publicKey),
+        network: this.network
+      });
+
       return {
-        success: false,
-        error: message,
-        note: "Consider using a backend API or specialized Bitcoin wallet libraries for browser compatibility"
+        success: true,
+        address,
+        privateKey: privateKeyWIF,
+        publicKey: Buffer.from(keyPair.publicKey).toString('hex')
       };
     } catch (error) {
       console.error('Error importing Bitcoin wallet:', error);
@@ -61,7 +119,6 @@ export class BitcoinWalletUtils {
     }
   }
 
-  // Get wallet balance (this works in browsers)
   async getBalance(address) {
     try {
       if (!address) {
@@ -77,7 +134,7 @@ export class BitcoinWalletUtils {
       
       const data = await response.json();
       const balance = data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum;
-      const balanceBTC = balance / 100000000; // Convert satoshis to BTC
+      const balanceBTC = balance / 100000000;
       
       console.log(`Balance for ${address}: ${balanceBTC} BTC`);
       
@@ -95,18 +152,157 @@ export class BitcoinWalletUtils {
     }
   }
 
-  // Send Bitcoin transaction (requires backend or specialized libraries)
+  async getUTXOs(address) {
+    try {
+      const response = await fetch(`${this.apiUrl}/address/${address}/utxo`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch UTXOs: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching UTXOs:', error);
+      throw error;
+    }
+  }
+
+  async getTxHex(txid) {
+    try {
+      const response = await fetch(`${this.apiUrl}/tx/${txid}/hex`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch transaction: ${response.status}`);
+      }
+      return await response.text();
+    } catch (error) {
+      console.error('Error fetching transaction:', error);
+      throw error;
+    }
+  }
+
+  async getFeeRate() {
+    try {
+      const response = await fetch(`${this.apiUrl}/fee-estimates`);
+      if (!response.ok) {
+        return 3;
+      }
+      const feeEstimates = await response.json();
+      return feeEstimates['6'] || 3;
+    } catch (error) {
+      console.warn('Using default fee rate:', error);
+      return 3;
+    }
+  }
+
   async sendBitcoin(fromAddress, toAddress, amountBTC, privateKeyWIF) {
     try {
-      const message = "Bitcoin transaction signing requires specialized libraries. Please use a backend service or hardware wallet.";
-      
+      if (!fromAddress || !toAddress || !amountBTC || !privateKeyWIF) {
+        throw new Error('All parameters are required');
+      }
+
+      const amountSats = Math.floor(amountBTC * 100000000);
+      if (amountSats <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+
+      console.log(`Preparing to send ${amountBTC} BTC (${amountSats} sats) from ${fromAddress} to ${toAddress}`);
+
+      const keyPair = ECPair.fromWIF(privateKeyWIF, this.network);
+      const payment = bitcoin.payments.p2wpkh({
+        pubkey: Buffer.from(keyPair.publicKey),
+        network: this.network
+      });
+
+      if (payment.address !== fromAddress) {
+        throw new Error('Private key does not match from address');
+      }
+
+      const utxos = await this.getUTXOs(fromAddress);
+      if (!utxos || utxos.length === 0) {
+        throw new Error('No UTXOs found for this address');
+      }
+
+      const feeRate = await this.getFeeRate();
+      console.log(`Using fee rate: ${feeRate} sat/vB`);
+
+      const psbt = new bitcoin.Psbt({ network: this.network });
+      let inputSum = 0;
+
+      for (const utxo of utxos) {
+        const txHex = await this.getTxHex(utxo.txid);
+        const tx = bitcoin.Transaction.fromHex(txHex);
+        
+        psbt.addInput({
+          hash: utxo.txid,
+          index: utxo.vout,
+          witnessUtxo: {
+            script: payment.output,
+            value: utxo.value
+          }
+        });
+
+        inputSum += utxo.value;
+
+        const estimatedSize = utxos.length * 68 + 2 * 31 + 10;
+        const estimatedFee = Math.ceil(estimatedSize * feeRate);
+        
+        if (inputSum >= amountSats + estimatedFee) {
+          break;
+        }
+      }
+
+      const estimatedSize = psbt.txInputs.length * 68 + 2 * 31 + 10;
+      const fee = Math.ceil(estimatedSize * feeRate);
+      const change = inputSum - amountSats - fee;
+
+      console.log(`Input: ${inputSum} sats, Amount: ${amountSats} sats, Fee: ${fee} sats, Change: ${change} sats`);
+
+      if (inputSum < amountSats + fee) {
+        throw new Error(`Insufficient funds. Have ${inputSum} sats, need ${amountSats + fee} sats (including fee)`);
+      }
+
+      psbt.addOutput({
+        address: toAddress,
+        value: amountSats
+      });
+
+      if (change > 546) {
+        psbt.addOutput({
+          address: fromAddress,
+          value: change
+        });
+      }
+
+      for (let i = 0; i < psbt.txInputs.length; i++) {
+        psbt.signInput(i, keyPair);
+      }
+
+      psbt.finalizeAllInputs();
+      const txHex = psbt.extractTransaction().toHex();
+
+      console.log('Broadcasting transaction...');
+      const response = await fetch(`${this.apiUrl}/tx`, {
+        method: 'POST',
+        body: txHex
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Broadcast failed: ${errorText}`);
+      }
+
+      const txId = await response.text();
+      console.log(`Transaction broadcast successfully: ${txId}`);
+
       return {
-        success: false,
-        error: message,
-        note: "For security and browser compatibility, consider using a backend API, hardware wallet, or specialized Bitcoin transaction libraries"
+        success: true,
+        txId,
+        amount: amountBTC,
+        amountSats,
+        fee: fee / 100000000,
+        feeSats: fee,
+        explorerUrl: `https://blockstream.info/testnet/tx/${txId}`
       };
     } catch (error) {
-      console.error('Transaction failed:', error.message);
+      console.error('Transaction failed:', error);
       return {
         success: false,
         error: error.message
@@ -114,7 +310,6 @@ export class BitcoinWalletUtils {
     }
   }
 
-  // Get transaction status (this works in browsers)
   async getTransactionStatus(txId) {
     try {
       if (!txId) {
@@ -143,10 +338,8 @@ export class BitcoinWalletUtils {
   }
 }
 
-// Hook for using Bitcoin wallet utilities
 export const useBitcoinWallet = () => {
   return useMemo(() => new BitcoinWalletUtils(), []);
 };
 
-// Export default instance
 export default new BitcoinWalletUtils();
